@@ -4,7 +4,6 @@
 # Change notebook script into package
 
 from utils import *
-from magenta.music.protobuf import music_pb2
 
 from tensor2tensor.utils import decoding
 from tensor2tensor.utils import trainer_lib
@@ -30,9 +29,8 @@ flags.DEFINE_string(
 	'Pre-trained model path.'
 )
 flags.DEFINE_string(
-	'primer_path', None,
-	'Midi file path for priming if not provided '
-	'model will generate sample without priming.'
+	'melody_path', None,
+	'Midi file path for melody'
 )
 flags.DEFINE_string(
 	'output', None,
@@ -41,10 +39,6 @@ flags.DEFINE_string(
 flags.DEFINE_string(
 	'sample', 'random',
 	'Sampling method.'
-)
-flags.DEFINE_integer(
-	'max_primer_second', 20,
-	'Maximum number of time in seconds for priming.'
 )
 flags.DEFINE_integer(
 	'layers', 16,
@@ -85,28 +79,16 @@ def run():
 			'Decode length must be > 0.'
 		)
 
-	problem = PianoPerformanceLanguageModelProblem()
-	unconditional_encoders = problem.get_feature_encoders()
-	primer_ns = music_pb2.NoteSequence()
-	if FLAGS.primer_path is None:
-		targets = []
-	else:
-		if FLAGS.max_primer_second <= 0:
-			raise ValueError(
-				'Max primer second must be > 0.'
-			)
-		else:
-			primer_ns = get_primer_ns(FLAGS.primer_path, FLAGS.max_primer_second)
-			targets = unconditional_encoders['targets'].encode_note_sequence(primer_ns)
+	if FLAGS.melody_path is None:
+		raise ValueError(
+			'Required melody Midi file path.'
+		)
 
-			# Remove the end token from the encoded primer.
-			targets = targets[:-1]
-			if len(targets) >= FLAGS.decode_length:
-				raise ValueError(
-					'Primer has more or equal events than maximum sequence length: %d >= %d; Aborting' %
-					(len(targets), FLAGS.decode_length)
-				)
-	decode_length = FLAGS.decode_length - len(targets)
+	problem = MelodyToPianoPerformanceProblem()
+	melody_conditioned_encoders = problem.get_feature_encoders()
+	melody_ns = get_melody_ns(FLAGS.melody_path)
+	inputs = melody_conditioned_encoders['inputs'].encode_note_sequence(
+		melody_ns)
 
 	# Set up HParams.
 	hparams = trainer_lib.create_hparams(hparams_set=FLAGS.hparams_set)
@@ -128,27 +110,23 @@ def run():
 	)
 
 	# Start the Estimator, loading from the specified checkpoint.
-	input_fn = decoding.make_input_fn_from_generator(unconditional_input_generator(targets, decode_length))
-	unconditional_samples = estimator.predict(
+	input_fn = decoding.make_input_fn_from_generator(melody_input_generator(inputs, FLAGS.decode_length))
+	melody_conditioned_samples = estimator.predict(
 		input_fn, checkpoint_path=FLAGS.model_path)
 
 	# Generate sample events.
 	logging.info('Generating sample.')
-	sample_ids = next(unconditional_samples)['outputs']
+	sample_ids = next(melody_conditioned_samples)['outputs']
 
-	# Decode to NoteSequence
+	# Decode to NoteSequence.
 	logging.info('Decoding sample id')
 	midi_filename = decode(
 		sample_ids,
-		encoder=unconditional_encoders['targets']
-	)
-	unconditional_ns = mm.midi_file_to_note_sequence(midi_filename)
-
-	# Append continuation to primer if any.
-	continuation_ns = mm.concatenate_sequences([primer_ns, unconditional_ns])
+		encoder=melody_conditioned_encoders['targets'])
+	accompaniment_ns = mm.midi_file_to_note_sequence(midi_filename)
 
 	logging.info('Converting note sequences to Midi file.')
-	mm.sequence_proto_to_midi_file(continuation_ns, FLAGS.output)
+	mm.sequence_proto_to_midi_file(accompaniment_ns, FLAGS.output)
 
 
 def main(unused_argv):
@@ -162,5 +140,3 @@ def console_entry_point():
 
 if __name__ == '__main__':
 	console_entry_point()
-
-
