@@ -21,16 +21,15 @@ PVAE_TRAIN_ENTRY_POINT=$1
 PVAE_GEN_ENTRY_POINT=$2
 PVAE_RUN_PATH=$3
 PVAE_INPUT_PATH=$4
-PVAE_GEN_NUM=$5
-PVAE_TRAINING_STEPS=$6
-VAE_MODEL_PATH=$7
-NUM_MELODY_SAMPLES=$8
-MELODY_OUTPUT_PATH=$9
-TRANSFORMER_UNCONDITIONED_CHECKPOINT=${10}
-TRANSFORMER_CONDITIONED_CHECKPOINT=${11}
-TRANSFORMER_OUTPUT=${12}
-TRANSFORMER_UNCONDITIONED_ENTRYPOINT=${13}
-TRANSFORMER_CONDITIONED_ENTRYPOINT=${14}
+PVAE_TRAINING_STEPS=$5
+VAE_MODEL_PATH=$6
+NUM_MELODY_SAMPLES=$7
+MELODY_OUTPUT_PATH=$8
+TRANSFORMER_UNCONDITIONED_CHECKPOINT=$9
+TRANSFORMER_CONDITIONED_CHECKPOINT=${10}
+TRANSFORMER_OUTPUT=${11}
+TRANSFORMER_UNCONDITIONED_ENTRYPOINT=${12}
+TRANSFORMER_CONDITIONED_ENTRYPOINT=${13}
 
 # For now only supports cat-mel_2bar_big
 VAE_CONFIG="cat-mel_2bar_big"
@@ -40,7 +39,7 @@ DECODER_LENGTH=1024
 echo "Begin training $PVAE_CONFIG model"
 python "$PVAE_TRAIN_ENTRY_POINT" --config="$PVAE_CONFIG" --run_dir="$PVAE_RUN_PATH" --mode=train --examples_path="$PVAE_INPUT_PATH" --pretrained_path="$VAE_MODEL_PATH" -num_steps="$PVAE_TRAINING_STEPS"
 
- Check if last character is '/'
+# Check if last character is '/'
 if [[ "${PVAE_RUN_PATH: -1}" == '/' ]]; then
    PVAE_CHECKPOINTS="$PVAE_RUN_PATH""train"
 else
@@ -51,13 +50,13 @@ for checkpoint in "$PVAE_CHECKPOINTS"/*; do
     echo "$checkpoint"
 done
 
-read -p "Choose your personalized MusicVAE model checkpoint from above for melody generation (Eg: model.ckpt-100)" CHOSEN_CHECKPOINT
+read -p "Choose your personalized MusicVAE model checkpoint from above for melody generation (Eg: model.ckpt-100): " CHOSEN_CHECKPOINT
 if [[ 0 -eq $(ls "$CHOSEN_CHECKPOINT"* 2>/dev/null | wc -w) ]]; then
     echo "$CHOSEN_CHECKPOINT does not exist"
     exit 1
 fi
 
-echo "Begin generating $PVAE_GEN_NUM melody samples"
+echo "Begin generating $NUM_MELODY_SAMPLES melody samples"
 python "$PVAE_GEN_ENTRY_POINT" --vae_config="$VAE_CONFIG" --config="$PVAE_CONFIG" --checkpoint_file="$CHOSEN_CHECKPOINT" --vae_checkpoint_file="$VAE_MODEL_PATH" --num_outputs="$NUM_MELODY_SAMPLES" --output_dir="$MELODY_OUTPUT_PATH"
 
 echo "Finish generating $NUM_MELODY_SAMPLES samples"
