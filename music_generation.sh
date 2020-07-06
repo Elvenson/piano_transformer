@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 # Personalized model (SmallMusicVAE, LCMusicVAE)
 echo "Choose your personalized model config:
