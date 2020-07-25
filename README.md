@@ -5,14 +5,11 @@ By porting from notebook to script, automating music generation creative process
 is only for music generation from pre-trained model only, not for training purpose.
 
 ## Installation:
-You need to install [Magenta](https://github.com/tensorflow/magenta) repo by typing `pip install magenta` package (support only Python >= 3.5) 
-or if you want to install with anaconda, just simply type:
-
+You need to install [Magenta](https://github.com/tensorflow/magenta) package (support only Python >= 3.5) with correct version:
 ```bash
-curl https://raw.githubusercontent.com/tensorflow/magenta/master/magenta/tools/magenta-install.sh > /tmp/magenta-install.sh
-bash /tmp/magenta-install.sh
+pip install magenta==1.3.1
 ```
-
+ 
 You also need to install `google cloud sdk` to get `Music Transformer` pre-trained model on cloud bucket. To get Google Cloud
 SDK please follow this [installation guide](https://cloud.google.com/sdk/docs/downloads-versioned-archives).
 
