@@ -23,18 +23,18 @@ gsutil -q -m cp -r gs://magentadata/models/music_transformer/* <destination fold
 You can generate music without any priming effect by simply type:
 
 ```bash
-python unconditional_sample.py -model_path=path/to/model/checkpoints/unconditional_model_16.ckpt -output=/tmp/unconditional.mid -decode_length=1024
+python unconditional_sample.py -model_path=path/to/model/checkpoints/unconditional_model_16.ckpt -output_dir=/tmp -decode_length=1024 -num_samples=1
 ```
 
 or you can add primer by using `primer_path` parameter:
 ```bash
-python unconditional_sample.py -model_path=path/to/model/checkpoints/unconditional_model_16.ckpt -output=/tmp/unconditional.mid -decode_length=1024 -primer_path=path/to/primer_mid
+python unconditional_sample.py -model_path=path/to/model/checkpoints/unconditional_model_16.ckpt -output_dir=/tmp -decode_length=1024 -primer_path=path/to/primer_mid -num_samples=1
 ```
 
 ### Conditional Transformer:
 Generating music conditioned on midi file by typing:
 ```bash
-python melody_sample.py -model_path=path/to/model/checkpoints/melody_conditioned_model_16.ckpt -output=/tmp/conditioned_melody.mid -decode_length=1024 -melody_path=path/to/melody_midi
+python melody_sample.py -model_path=path/to/model/checkpoints/melody_conditioned_model_16.ckpt -output_dir=/tmp -decode_length=1024 -melody_path=path/to/melody_midi -num_samples=1
 ```
 
 ### Music Generation Automation:

@@ -4,12 +4,17 @@
 # Change notebook script into package
 
 """Conditioned Transformer."""
+import os
+import time
+
+import tensorflow.compat.v1 as tf  # pylint: disable=import-error
+
 from tensor2tensor.utils import trainer_lib
 from tensor2tensor.utils import decoding
 
 import utils
 
-flags = utils.tf.compat.v1.flags
+flags = tf.flags
 FLAGS = flags.FLAGS
 
 flags.DEFINE_string(
@@ -34,8 +39,8 @@ flags.DEFINE_string(
     'Midi file path for melody'
 )
 flags.DEFINE_string(
-    'output', None,
-    'Midi output path.'
+    'output_dir', None,
+    'Midi output directory.'
 )
 flags.DEFINE_string(
     'sample', 'random',
@@ -57,6 +62,46 @@ flags.DEFINE_float(
     'alpha', 0.0,
     'Alpha for decoder.'
 )
+flags.DEFINE_integer(
+    'num_samples', 1,
+    'Number of generated samples.'
+)
+
+
+def generate(estimator, conditional_encoders, inputs):
+    """
+    Generate conditioned music samples from estimator.
+    :param estimator: Transformer estimator.
+    :param conditional_encoders: A dictionary contains key and its encoder.
+    :param inputs: Input for Transformer.
+    :return:
+    """
+    tf.gfile.MakeDirs(FLAGS.output_dir)
+    date_and_time = time.strftime('%Y-%m-%d_%H%M%S')
+    base_name = os.path.join(
+        FLAGS.output_dir,
+        '%s_%s-*-of-%03d.mid' % ('melody', date_and_time, FLAGS.num_samples)
+    )
+    utils.LOGGER.info('Generating %d samples with format %s' % (FLAGS.num_samples, base_name))
+    for i in range(FLAGS.num_samples):
+        utils.LOGGER.info('Generating sample %d' % i)
+        # Start the Estimator, loading from the specified checkpoint.
+        input_fn = decoding.make_input_fn_from_generator(utils.melody_input_generator(
+            inputs, FLAGS.decode_length))
+        melody_conditioned_samples = estimator.predict(
+            input_fn, checkpoint_path=FLAGS.model_path)
+
+        # Generate sample events.
+        utils.LOGGER.info('Generating sample.')
+        sample_ids = next(melody_conditioned_samples)['outputs']
+
+        # Decode to NoteSequence.
+        utils.LOGGER.info('Decoding sample id')
+        midi_filename = utils.decode(
+            sample_ids,
+            encoder=conditional_encoders['targets'])
+        accompaniment_ns = utils.mm.midi_file_to_note_sequence(midi_filename)
+        utils.mm.sequence_proto_to_midi_file(accompaniment_ns, base_name.replace('*', '%03d' % i))
 
 
 def run():
@@ -70,9 +115,9 @@ def run():
             'Required Transformer pre-trained model path.'
         )
 
-    if FLAGS.output is None:
+    if FLAGS.output_dir is None:
         raise ValueError(
-            'Required Midi output path.'
+            'Required Midi output directory.'
         )
 
     if FLAGS.decode_length <= 0:
@@ -103,32 +148,14 @@ def run():
     decode_hparams.beam_size = FLAGS.beam_size
 
     # Create Estimator.
-    utils.LOGGER.info('Loading model')
+    utils.LOGGER.info('Loading model.')
     run_config = trainer_lib.create_run_config(hparams)
     estimator = trainer_lib.create_estimator(
         FLAGS.model_name, hparams, run_config,
         decode_hparams=decode_hparams
     )
 
-    # Start the Estimator, loading from the specified checkpoint.
-    input_fn = decoding.make_input_fn_from_generator(utils.melody_input_generator(
-        inputs, FLAGS.decode_length))
-    melody_conditioned_samples = estimator.predict(
-        input_fn, checkpoint_path=FLAGS.model_path)
-
-    # Generate sample events.
-    utils.LOGGER.info('Generating sample.')
-    sample_ids = next(melody_conditioned_samples)['outputs']
-
-    # Decode to NoteSequence.
-    utils.LOGGER.info('Decoding sample id')
-    midi_filename = utils.decode(
-        sample_ids,
-        encoder=melody_conditioned_encoders['targets'])
-    accompaniment_ns = utils.mm.midi_file_to_note_sequence(midi_filename)
-
-    utils.LOGGER.info('Converting note sequences to Midi file.')
-    utils.mm.sequence_proto_to_midi_file(accompaniment_ns, FLAGS.output)
+    generate(estimator, melody_conditioned_encoders, inputs)
 
 
 def main(unused_argv):
@@ -139,7 +166,7 @@ def main(unused_argv):
 
 def console_entry_point():
     """Call main function."""
-    utils.tf.compat.v1.app.run(main)
+    tf.app.run(main)
 
 
 if __name__ == '__main__':
