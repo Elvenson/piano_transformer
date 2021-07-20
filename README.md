@@ -9,6 +9,12 @@ You need to install [Magenta](https://github.com/tensorflow/magenta) package (su
 ```bash
 pip install magenta==1.3.1
 ```
+
+If you have any issues regarding installation, you can install via this method:
+```bash
+cd <path_to_this_repo>; pip install -r requirements.txt
+```
+**Note**: Some packages in here are redundant since this is my local environment.
  
 You also need to install `google cloud sdk` to get `Music Transformer` pre-trained model on cloud bucket. To get Google Cloud
 SDK please follow this [installation guide](https://cloud.google.com/sdk/docs/downloads-versioned-archives).
@@ -16,7 +22,7 @@ SDK please follow this [installation guide](https://cloud.google.com/sdk/docs/do
 ## How to use
 Download Music Transformer pre-trained model with Google Cloud SDK:
 ```
-gsutil -q -m cp -r gs://magentadata/models/music_transformer/* <destination folder>
+gsutil -q -m cp -r gs://magentadata/models/music_transformer/checkpoints/* <destination folder>
 ```
 
 ### Unconditional Transformer:
