@@ -1,6 +1,6 @@
 absl-py==0.9.0
 alembic==1.5.4
-apache-airflow==2.0.1
+apache-airflow==2.4.1
 apache-airflow-providers-ftp==1.0.1
 apache-airflow-providers-http==1.1.0
 apache-airflow-providers-imap==1.0.1
