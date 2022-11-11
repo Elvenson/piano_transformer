@@ -188,7 +188,7 @@ pymongo==3.10.1
 pyparsing==2.4.7
 pypng==0.0.20
 pyrsistent==0.16.0
-pyspark==3.0.1
+pyspark==3.2.2
 pytest==5.4.3
 pytest-pylint==0.17.0
 python-daemon==2.2.4
